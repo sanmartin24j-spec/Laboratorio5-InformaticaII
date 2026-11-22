@@ -1,6 +1,9 @@
 #ifndef PARTICULA_H
 #define PARTICULA_H
 
+#include <string>
+#include <vector>
+
 class particula
 {
 private:
@@ -18,7 +21,7 @@ public:
 particula(int id, double x, double y,double vx, double vy,double masa, double radio);
 
 void mover(double dt);
-void rebotarEnPared(double anchoCaja, double altoCaja);
+std::vector<std::string> rebotarEnPared(double anchoCaja, double altoCaja);
 int getId() const;
 double getX() const;
 double getY() const;
