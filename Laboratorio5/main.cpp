@@ -9,13 +9,16 @@ int main()
 {
  vector<particula> particulas;
 
-particulas.emplace_back(1, 10, 10, 5, 3, 2, 3);
+particulas.emplace_back(1, 10, 10, 12, 3, 2, 3);
 particulas.emplace_back(2, 30, 20, -4, 2, 3, 4);
 particulas.emplace_back(3, 50, 40, 2, -3, 2, 3);
 particulas.emplace_back(4, 70, 60, -3, -2, 4, 5);
 
 const double dt = 0.1;
 const int pasos = 100;
+
+const double anchoCaja = 100.0;
+const double altoCaja = 80.0;
 
 ofstream archivo("trayectorias.csv");
 
@@ -44,11 +47,12 @@ for (int paso = 0; paso <= pasos; paso++)
 
     if (paso < pasos)
     {
-    for (auto &particula : particulas) //reco move
-        {
-         particula.mover(dt);
-        }
+    for (auto &particula : particulas)
+    {
+        particula.mover(dt);
+        particula.rebotarEnPared(anchoCaja, altoCaja);
     }
+  }
 }
 
     archivo.close();
@@ -57,4 +61,5 @@ for (int paso = 0; paso <= pasos; paso++)
     cout << "Archivo trayectorias.csv generado." << endl;
 
     return 0;
+
 }

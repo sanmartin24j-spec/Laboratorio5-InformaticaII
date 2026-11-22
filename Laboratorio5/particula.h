@@ -18,6 +18,7 @@ public:
 particula(int id, double x, double y,double vx, double vy,double masa, double radio);
 
 void mover(double dt);
+void rebotarEnPared(double anchoCaja, double altoCaja);
 int getId() const;
 double getX() const;
 double getY() const;

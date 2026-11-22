@@ -11,6 +11,32 @@ void particula::mover(double dt)
     y = y + vy * dt;
 }
 
+void particula::rebotarEnPared(double anchoCaja, double altoCaja)
+{
+    if (x + radio >= anchoCaja)
+    {
+        x = anchoCaja - radio;
+        vx = -vx;
+    }
+    else if (x - radio <= 0)
+    {
+        x = radio;
+        vx = -vx;
+    }
+
+    if (y + radio >= altoCaja)
+    {
+        y = altoCaja - radio;
+        vy = -vy;
+    }
+    else if (y - radio <= 0)
+    {
+        y = radio;
+        vy = -vy;
+    }
+}
+
+
 int particula::getId() const
 {
     return id;
