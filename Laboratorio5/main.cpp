@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include "particula.h"
+#include "obstaculo.h"
 
 using namespace std;
 
@@ -9,10 +10,31 @@ int main()
 {
  vector<particula> particulas;
 
-particulas.emplace_back(1, 10, 10, 12, 3, 2, 3);
+particulas.emplace_back(1, 15, 35, 12, 0, 2, 3);
 particulas.emplace_back(2, 30, 20, -4, 2, 3, 4);
 particulas.emplace_back(3, 50, 40, 2, -3, 2, 3);
 particulas.emplace_back(4, 70, 60, -3, -2, 4, 5);
+
+vector<Obstaculo> obstaculos;
+
+obstaculos.emplace_back(1, 20, 30, 10, 0.7);
+obstaculos.emplace_back(2, 60, 15, 10, 0.7);
+obstaculos.emplace_back(3, 35, 55, 10, 0.7);
+obstaculos.emplace_back(4, 80, 50, 10, 0.7);
+
+cout << "\nObstaculos creados:\n";
+
+for (const auto &obstaculo : obstaculos)
+{
+    cout << "Obstaculo: " << obstaculo.getId()
+    << " | X: " << obstaculo.getX()
+    << " | Y: " << obstaculo.getY()
+    << " | Lado: " << obstaculo.getLado()
+    << " | Restitucion: "
+    << obstaculo.getRestitucion()
+    << endl;
+}
+
 
 const double dt = 0.1;
 const int pasos = 100;
@@ -69,6 +91,20 @@ for (int paso = 0; paso <= pasos; paso++)
                     << (paso + 1) * dt << ","
                     << particula.getId() << ","
                     << evento << "\n";
+            }
+            for (const auto &obstaculo : obstaculos)
+            {
+                std::string ladoImpacto;
+
+                if (particula.rebotarEnObstaculo(
+                        obstaculo, ladoImpacto))
+                {
+                    archivoColisiones
+                        << (paso + 1) * dt << ","
+                        << particula.getId() << ","
+                        << "obstaculo_" << obstaculo.getId()
+                        << "_" << ladoImpacto << "\n";
+                }
             }
         }
     }

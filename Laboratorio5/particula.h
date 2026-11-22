@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+class Obstaculo;
+
 class particula
 {
 private:
@@ -27,6 +29,9 @@ double getX() const;
 double getY() const;
 double getVx() const;
 double getVy() const;
+bool tocaObstaculo(const Obstaculo &obstaculo) const;
+bool rebotarEnObstaculo(const Obstaculo &obstaculo,std::string &ladoImpacto);
+
 
 };
 
