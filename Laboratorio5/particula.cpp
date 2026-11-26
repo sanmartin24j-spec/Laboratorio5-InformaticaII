@@ -174,16 +174,6 @@ bool particula::rebotarEnObstaculo(
 
     double velocidadNormal = vx * nx + vy * ny;
 
-    if (id == 3 && obstaculo.getId() == 2 &&
-        velocidadNormal < 0)
-    {
-        std::cout << "Colision particula 3 - obstaculo 2\n"
-                  << "Normal: (" << nx << ", " << ny << ")\n"
-                  << "Velocidad antes: (" << vx << ", " << vy << ")\n"
-                  << "Velocidad normal: " << velocidadNormal
-                  << "\n";
-    }
-
 
     if (velocidadNormal >= 0)
     {
@@ -206,4 +196,39 @@ bool particula::rebotarEnObstaculo(
         ladoImpacto = "esquina";
 
     return true;
+}
+
+bool particula::tocaParticula(const particula &otra) const
+{
+    double diferenciaX = x - otra.x;
+    double diferenciaY = y - otra.y;
+
+    double distanciaCuadrada =
+        diferenciaX * diferenciaX +
+        diferenciaY * diferenciaY;
+
+    double sumaRadios = radio + otra.radio;
+
+    return distanciaCuadrada <= sumaRadios * sumaRadios;
+}
+
+
+particula particula::fusionarCon(
+    const particula &otra, int nuevoId) const
+{
+
+    double masaFinal = masa + otra.masa;
+
+    double vxFinal =(masa * vx + otra.masa * otra.vx) / masaFinal;
+
+    double vyFinal =(masa * vy + otra.masa * otra.vy) / masaFinal;
+
+    double xFinal =(masa * x + otra.masa * otra.x) / masaFinal;
+
+    double yFinal =(masa * y + otra.masa * otra.y) / masaFinal;
+
+    double radioFinal =std::sqrt(radio * radio + otra.radio * otra.radio);
+
+
+    return particula(nuevoId,xFinal,yFinal,vxFinal,vyFinal,masaFinal,radioFinal);
 }

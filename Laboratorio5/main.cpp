@@ -1,6 +1,10 @@
+
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <string>
+#include <iomanip>
+
 #include "particula.h"
 #include "obstaculo.h"
 
@@ -8,113 +12,180 @@ using namespace std;
 
 int main()
 {
- vector<particula> particulas;
 
-particulas.emplace_back(1, 15, 35, 12, 0, 2, 3);
-particulas.emplace_back(2, 30, 20, -4, 2, 3, 4);
-particulas.emplace_back(3, 50, 40, 2, -3, 2, 3);
-particulas.emplace_back(4, 70, 60, -3, -2, 4, 5);
-
-vector<Obstaculo> obstaculos;
-
-obstaculos.emplace_back(1, 20, 30, 10, 0.7);
-obstaculos.emplace_back(2, 60, 15, 10, 0.7);
-obstaculos.emplace_back(3, 35, 55, 10, 0.7);
-obstaculos.emplace_back(4, 80, 50, 10, 0.7);
-
-cout << "\nObstaculos creados:\n";
-
-for (const auto &obstaculo : obstaculos)
-{
-    cout << "Obstaculo: " << obstaculo.getId()
-    << " | X: " << obstaculo.getX()
-    << " | Y: " << obstaculo.getY()
-    << " | Lado: " << obstaculo.getLado()
-    << " | Restitucion: "
-    << obstaculo.getRestitucion()
-    << endl;
-}
+    const double anchoCaja = 100.0;
+    const double altoCaja = 80.0;
 
 
-const double dt = 0.1;
-const int pasos = 100;
+    const double dt = 0.1;
+    const int pasos = 100;
 
-const double anchoCaja = 100.0;
-const double altoCaja = 80.0;
 
-ofstream archivo("trayectorias.csv");
-ofstream archivoColisiones("colisiones.csv");
+    vector<particula> particulas;
 
-if (!archivo.is_open())
-{
-    cout << "Error al crear el archivo." << endl;
-    return 1;
-}
+    particulas.emplace_back(1, 10, 10, 4, 0, 2, 3);
+    particulas.emplace_back(2, 20, 10, -4, 0, 3, 3);
+    particulas.emplace_back(3, 50, 40, 2, -3, 2, 3);
+    particulas.emplace_back(4, 70, 60, -3, -2, 4, 5);
 
-if (!archivoColisiones.is_open())
-{
-    cout << "Error al crear colisiones.csv" << endl;
-    return 1;
-}
 
-archivoColisiones << "tiempo,id,tipo_colision\n";
+    vector<Obstaculo> obstaculos;
 
-archivo << "tiempo,id,x,y,vx,vy\n";
+    obstaculos.emplace_back(1, 20, 30, 10, 0.7);
+    obstaculos.emplace_back(2, 60, 15, 10, 0.7);
+    obstaculos.emplace_back(3, 35, 55, 10, 0.7);
+    obstaculos.emplace_back(4, 80, 50, 10, 0.7);
 
-for (int paso = 0; paso <= pasos; paso++)
-{
-    double tiempo = paso * dt;
 
-    for (const auto &particula : particulas)//propied
+    int siguienteId = 5;
+
+
+    ofstream archivo("trayectorias.csv");
+    ofstream archivoColisiones("colisiones.csv");
+
+    if (!archivo.is_open() || !archivoColisiones.is_open())
     {
-    archivo
-    << tiempo << ","
-    << particula.getId() << ","
-    << particula.getX() << ","
-    << particula.getY() << ","
-    << particula.getVx() << ","
-    << particula.getVy() << "\n";
+        cout << "Error al crear archivos CSV." << endl;
+        return 1;
     }
 
-    if (paso < pasos)
-    {
-        for (auto &particula : particulas)
-        {
-            particula.mover(dt);
+    archivo << "tiempo,id,x,y,vx,vy\n";
+    archivoColisiones << "tiempo,id,tipo_colision\n";
 
-            std::vector<std::string> eventos =
-                particula.rebotarEnPared(anchoCaja, altoCaja);
+    archivo << fixed << setprecision(5);
+    archivoColisiones << fixed << setprecision(5);
+
+    cout << "Iniciando simulacion..." << endl;
+    cout << "Particulas iniciales: "<< particulas.size() << endl;
+
+
+    for (int paso = 0; paso <= pasos; paso++)
+    {
+        double tiempo = paso * dt;
+
+        // GUARDAR ESTADO ACTUAL
+        for (const auto &p : particulas)
+        {
+            archivo << tiempo << ","
+                    << p.getId() << ","
+                    << p.getX() << ","
+                    << p.getY() << ","
+                    << p.getVx() << ","
+                    << p.getVy() << "\n";
+        }
+
+        if (paso == pasos)
+        {
+            break;
+        }
+
+        double tiempoSiguiente = (paso + 1) * dt;
+
+        //mov y res
+        for (auto &p : particulas)
+        {
+            p.mover(dt);
+
+
+            vector<string> eventos =
+                p.rebotarEnPared(anchoCaja, altoCaja);
 
             for (const string &evento : eventos)
             {
                 archivoColisiones
-                    << (paso + 1) * dt << ","
-                    << particula.getId() << ","
+                    << tiempoSiguiente << ","
+                    << p.getId() << ","
                     << evento << "\n";
             }
+
             for (const auto &obstaculo : obstaculos)
             {
-                std::string ladoImpacto;
+                string ladoImpacto;
 
-                if (particula.rebotarEnObstaculo(
+                if (p.rebotarEnObstaculo(
                         obstaculo, ladoImpacto))
                 {
                     archivoColisiones
-                        << (paso + 1) * dt << ","
-                        << particula.getId() << ","
-                        << "obstaculo_" << obstaculo.getId()
+                        << tiempoSiguiente << ","
+                        << p.getId() << ","
+                        << "obstaculo_"
+                        << obstaculo.getId()
                         << "_" << ladoImpacto << "\n";
                 }
             }
         }
+
+        bool huboFusion;
+
+        do
+        {
+            huboFusion = false;
+
+            for (size_t i = 0;
+                 i < particulas.size() && !huboFusion;
+                 i++)
+            {
+                for (size_t j = i + 1;
+                     j < particulas.size();
+                     j++)
+                {
+                    if (particulas[i].tocaParticula(
+                            particulas[j]))
+                    {
+                        int id1 = particulas[i].getId();
+                        int id2 = particulas[j].getId();
+
+                        particula nueva =
+                            particulas[i].fusionarCon(
+                                particulas[j],
+                                siguienteId
+                                );
+
+                        archivoColisiones
+                            << tiempoSiguiente << ","
+                            << siguienteId << ","
+                            << "fusion_" << id1
+                            << "_" << id2 << "\n";
+
+                        cout << "Tiempo: "
+                             << tiempoSiguiente
+                             << " | Fusion: "
+                             << id1 << " + " << id2
+                             << " -> " << siguienteId
+                             << endl;
+
+
+                        particulas.erase(
+                            particulas.begin() + j
+                            );
+
+                        particulas.erase(
+                            particulas.begin() + i
+                            );
+
+
+                        particulas.push_back(nueva);
+
+                        siguienteId++;
+                        huboFusion = true;
+                        break;
+                    }
+                }
+            }
+
+        } while (huboFusion);
     }
-}
+
     archivo.close();
     archivoColisiones.close();
 
-    cout << "Simulacion finalizada." << endl;
-    cout << "Archivo trayectorias.csv generado." << endl;
+    cout << "\nSimulacion finalizada." << endl;
+    cout << "Particulas finales: "
+         << particulas.size() << endl;
+
+    cout << "Archivos generados:" << endl;
+    cout << "- trayectorias.csv" << endl;
+    cout << "- colisiones.csv" << endl;
 
     return 0;
-
 }
