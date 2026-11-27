@@ -3,6 +3,8 @@
 #define MAINWINDOW_H
 
 #include <QWidget>
+#include <QVector>
+#include <QRectF>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -29,18 +31,39 @@ protected:
 private:
     Ui::MainWindow *ui;
 
-    // Controles
+
+    struct Bloque
+    {
+        QRectF area;
+        int propietario;
+        double resistencia;
+    };
+
+    QVector<Bloque> bloques;
+
+    const double masaProyectil = 2.0;
+    const double factorDanio = 0.04;
+    const double restitucionBloque = 0.6;
+
+    bool procesarImpactoBloques();
+
+
     QDoubleSpinBox *controlAngulo;
     QDoubleSpinBox *controlVelocidad;
     QPushButton *botonDisparar;
     QTimer *temporizador;
 
-    // Estado del juego
+
     int jugadorActual = 1;
     int vidaJugador1 = 100;
     int vidaJugador2 = 100;
 
-    // Estado del proyectil
+    bool juegoTerminado = false;
+    int ganador = 0;
+
+    bool procesarImpactoJugador();
+
+
     bool proyectilActivo = false;
     double proyectilX = 0;
     double proyectilY = 0;
@@ -49,7 +72,7 @@ private:
     double tiempoVuelo = 0;
     int rebotesSuelo = 0;
 
-    // Constantes fisicas
+
     const double gravedad = 240.0;
     const double dt = 0.016;
     const double radioProyectil = 7.0;
@@ -57,6 +80,7 @@ private:
     void disparar();
     void actualizarSimulacion();
     void terminarDisparo();
+
 };
 
 #endif

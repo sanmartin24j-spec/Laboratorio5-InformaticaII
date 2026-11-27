@@ -13,7 +13,7 @@
 #include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QTimer>
-
+#include <algorithm>
 #include <cmath>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -25,6 +25,23 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle("Juego de Artilleria - Laboratorio 5");
     resize(900, 550);
     setMinimumSize(900, 550);
+
+    setFixedSize(900, 550);
+
+    int suelo = height() - 90;
+
+    //IP1
+    bloques.append({QRectF(115, suelo - 35, 30, 35), 1, 100});
+    bloques.append({QRectF(155, suelo - 55, 30, 55), 1, 100});
+    bloques.append({QRectF(195, suelo - 35, 30, 35), 1, 100});
+
+    //IP2
+    int derecha = width() - 225;
+
+    bloques.append({QRectF(derecha, suelo - 35, 30, 35), 2, 100});
+    bloques.append({QRectF(derecha + 40, suelo - 55, 30, 55), 2, 100});
+    bloques.append({QRectF(derecha + 80, suelo - 35, 30, 35), 2, 100});
+
 
     QLabel *textoAngulo = new QLabel("Angulo:", this);
     textoAngulo->setGeometry(25, 105, 65, 30);
@@ -56,11 +73,9 @@ MainWindow::MainWindow(QWidget *parent)
     temporizador->setInterval(16);
 
 
-    connect(botonDisparar, &QPushButton::clicked,
-            this, &MainWindow::disparar);
+    connect(botonDisparar, &QPushButton::clicked,this, &MainWindow::disparar);
 
-    connect(temporizador, &QTimer::timeout,
-            this, &MainWindow::actualizarSimulacion);
+    connect(temporizador, &QTimer::timeout,this, &MainWindow::actualizarSimulacion);
 }
 
 MainWindow::~MainWindow()
@@ -78,7 +93,6 @@ void MainWindow::paintEvent(QPaintEvent *event)
 
     painter.fillRect(rect(), QColor(18, 35, 55));
 
-    // TITULO
     QFont fuente = painter.font();
     fuente.setPointSize(16);
     fuente.setBold(true);
@@ -92,7 +106,7 @@ void MainWindow::paintEvent(QPaintEvent *event)
         "JUEGO DE ARTILLERIA"
         );
 
-    // MARCADORES
+    // Gol
     fuente.setPointSize(11);
     painter.setFont(fuente);
 
@@ -125,20 +139,43 @@ void MainWindow::paintEvent(QPaintEvent *event)
     painter.setBrush(QColor(240, 90, 90));
     painter.drawRect(width() - 95, suelo - 45, 45, 45);
 
+    for (const Bloque &bloque : bloques)
+    {
+        if (bloque.resistencia <= 0)
+        {
+            continue;
+        }
 
-    painter.setBrush(QColor(110, 175, 255));
+        painter.setPen(Qt::NoPen);
 
-    painter.drawRect(115, suelo - 35, 30, 35);
-    painter.drawRect(155, suelo - 55, 30, 55);
-    painter.drawRect(195, suelo - 35, 30, 35);
+        if (bloque.propietario == 1)
+        {
+            painter.setBrush(QColor(110, 175, 255));
+        }
+        else
+        {
+            painter.setBrush(QColor(255, 150, 150));
+        }
 
-    painter.setBrush(QColor(255, 150, 150));
+        painter.drawRect(bloque.area);
 
-    int derecha = width() - 225;
+        // ress
+        painter.setPen(Qt::white);
 
-    painter.drawRect(derecha, suelo - 35, 30, 35);
-    painter.drawRect(derecha + 40, suelo - 55, 30, 55);
-    painter.drawRect(derecha + 80, suelo - 35, 30, 35);
+        painter.drawText(
+            QRectF(
+                bloque.area.x() - 5,
+                bloque.area.y() - 20,
+                bloque.area.width() + 10,
+                18
+                ),
+            Qt::AlignCenter,
+            QString::number(bloque.resistencia, 'f', 0)
+            );
+    }
+
+
+
 
     if (proyectilActivo)
     {
@@ -156,11 +193,18 @@ void MainWindow::paintEvent(QPaintEvent *event)
 
     painter.setPen(QColor(255, 220, 120));
 
-    QString textoTurno =
-        "Turno del jugador " +
-        QString::number(jugadorActual);
+    QString textoTurno;
 
-    if (proyectilActivo)
+    if (juegoTerminado)
+    {
+    textoTurno = "GANADOR: JUGADOR "+ QString::number(ganador);
+    }
+    else
+    {
+    textoTurno = "Turno del jugador "+ QString::number(jugadorActual);
+    }
+
+    if (proyectilActivo || juegoTerminado)
     {
         textoTurno += " - Proyectil en movimiento";
     }
@@ -236,6 +280,13 @@ void MainWindow::actualizarSimulacion()
 
     tiempoVuelo += dt;
 
+    procesarImpactoBloques();
+
+    if (procesarImpactoJugador())
+    {
+        return;
+    }
+
     int suelo = height() - 90;
 
     if (proyectilX - radioProyectil <= 20 &&velocidadX < 0)
@@ -299,3 +350,192 @@ void MainWindow::terminarDisparo()
 
     update();
 }
+
+
+bool MainWindow::procesarImpactoBloques()
+{
+    for (Bloque &bloque : bloques)
+    {
+        if (bloque.propietario == jugadorActual ||
+            bloque.resistencia <= 0)
+        {
+            continue;
+        }
+
+        // Punto del rectangulo mas cercano al proyectil.
+        double cercanoX = std::max(
+            bloque.area.left(),
+            std::min(proyectilX, bloque.area.right())
+            );
+
+        double cercanoY = std::max(
+            bloque.area.top(),
+            std::min(proyectilY, bloque.area.bottom())
+            );
+
+        double dx = proyectilX - cercanoX;
+        double dy = proyectilY - cercanoY;
+        double distancia2 = dx * dx + dy * dy;
+
+        if (distancia2 > radioProyectil * radioProyectil)
+        {
+            continue;
+        }
+
+        // Calcular la normal del impacto.
+        double nx = 0;
+        double ny = 0;
+        double penetracion = 0;
+
+        if (distancia2 > 0.000001)
+        {
+            double distancia = std::sqrt(distancia2);
+
+            nx = dx / distancia;
+            ny = dy / distancia;
+
+            penetracion = radioProyectil - distancia;
+        }
+        else
+        {
+            double izquierda = proyectilX - bloque.area.left();
+            double derecha = bloque.area.right() - proyectilX;
+            double arriba = proyectilY - bloque.area.top();
+            double abajo = bloque.area.bottom() - proyectilY;
+
+            double minimo = std::min(
+                std::min(izquierda, derecha),
+                std::min(arriba, abajo)
+                );
+
+            if (minimo == izquierda)
+                nx = -1;
+            else if (minimo == derecha)
+                nx = 1;
+            else if (minimo == arriba)
+                ny = -1;
+            else
+                ny = 1;
+
+            penetracion = radioProyectil + minimo;
+        }
+
+        double velocidadNormal =
+            velocidadX * nx + velocidadY * ny;
+
+        // Sacar el proyectil del bloque.
+        proyectilX += nx * penetracion;
+        proyectilY += ny * penetracion;
+
+        if (velocidadNormal >= 0)
+        {
+            continue;
+        }
+
+
+        double rapidez = std::sqrt(
+            velocidadX * velocidadX +
+            velocidadY * velocidadY
+            );
+
+        double danio =
+            factorDanio * masaProyectil * rapidez;
+
+        bloque.resistencia = std::max(
+            0.0, bloque.resistencia - danio
+            );
+
+        // Rebote inelastico.
+        velocidadX -=
+        (1 + restitucionBloque) * velocidadNormal * nx;
+
+        velocidadY -=
+        (1 + restitucionBloque) * velocidadNormal * ny;
+
+        return true;
+    }
+
+    return false;
+}
+
+
+bool MainWindow::procesarImpactoJugador()
+{
+    int rival = (jugadorActual == 1) ? 2 : 1;
+
+
+    for (const Bloque &bloque : bloques)
+    {
+        if (bloque.propietario == rival &&
+            bloque.resistencia > 0)
+        {
+            return false;
+        }
+    }
+
+    int suelo = height() - 90;
+
+    QRectF areaRival;
+
+    if (rival == 1)
+        areaRival = QRectF(50, suelo - 45, 45, 45);
+    else
+        areaRival = QRectF(width() - 95, suelo - 45, 45, 45);
+
+
+    double cercanoX = std::max(
+        areaRival.left(),
+        std::min(proyectilX, areaRival.right())
+        );
+
+    double cercanoY = std::max(
+        areaRival.top(),
+        std::min(proyectilY, areaRival.bottom())
+        );
+
+    double dx = proyectilX - cercanoX;
+    double dy = proyectilY - cercanoY;
+
+    if (dx * dx + dy * dy >
+        radioProyectil * radioProyectil)
+    {
+        return false;
+    }
+
+
+    double rapidez = std::sqrt(
+        velocidadX * velocidadX +
+        velocidadY * velocidadY
+        );
+
+    int danio = std::max(
+        1,
+        static_cast<int>(
+            std::round(factorDanio * masaProyectil * rapidez)
+            )
+        );
+
+    int &vidaRival =
+        (rival == 1) ? vidaJugador1 : vidaJugador2;
+
+    vidaRival = std::max(0, vidaRival - danio);
+
+
+    temporizador->stop();
+    proyectilActivo = false;
+
+    if (vidaRival == 0)
+    {
+        juegoTerminado = true;
+        ganador = jugadorActual;
+        botonDisparar->setEnabled(false);
+    }
+    else
+    {
+        terminarDisparo();
+    }
+
+    update();
+    return true;
+}
+
